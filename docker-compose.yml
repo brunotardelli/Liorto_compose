@@ -2,86 +2,56 @@ version: "3.8"
 
 services:
 
-##########################################
+  redis:
+    image: redis:7
+    container_name: redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
 
-# REDIS (INTERNO)
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      WHATSAPP_HOOK_URL: http://n8n:5678/webhook/webhook-unified
+      WHATSAPP_HOOK_EVENTS: message
+      WHATSAPP_DEFAULT_ENGINE: NOWEB
+      WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME}
+      WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
+      WAHA_API_KEY: ${WAHA_API_KEY}
+    volumes:
+      - waha_sessions:/app/.sessions
+      - waha_media:/app/.media
+    networks:
+      - app-network
 
-##########################################
-
-redis:
-  image: redis:7
-  container_name: redis
-  command: redis-server --requirepass ${REDIS_PASSWORD}
-  restart: unless-stopped
-  volumes:
-    - redis_data:/data
-  networks:
-    - app-network
-
-##########################################
-
-# WAHA
-
-##########################################
-
-waha:
-  image: devlikeapro/waha:latest
-  container_name: waha
-  restart: unless-stopped
-  ports:
-    - "3000:3000"
-  environment:
-    WHATSAPP_HOOK_URL: http://n8n:5678/webhook/webhook-unified
-    WHATSAPP_HOOK_EVENTS: message
-    WHATSAPP_DEFAULT_ENGINE: NOWEB
-    WAHA_DASHBOARD_USERNAME: ${WAHA_DASHBOARD_USERNAME}
-    WAHA_DASHBOARD_PASSWORD: ${WAHA_DASHBOARD_PASSWORD}
-    WAHA_API_KEY: ${WAHA_API_KEY}
-  volumes:
-    - waha_sessions:/app/.sessions
-    - waha_media:/app/.media
-  networks:
-    - app-network
-
-##########################################
-
-# N8N
-
-##########################################
-
-n8n:
-  image: n8nio/n8n:2.0.0
-  container_name: n8n
-  restart: unless-stopped
-  ports:
-    - "5678:5678"
-  environment:
-    ################################
-    # HOST
-    ################################
-    N8N_HOST: ${N8N_HOST}
-    N8N_PORT: 5678
-    N8N_PROTOCOL: http
-    WEBHOOK_URL: ${WEBHOOK_URL}
-    ################################
-    # SECURITY
-    ################################
-    N8N_BASIC_AUTH_ACTIVE: "true"
-    N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
-    N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
-    N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-    ################################
-    # TIMEZONE
-    ################################
-    GENERIC_TIMEZONE: ${GENERIC_TIMEZONE}
-    ################################
-    # LOG
-    ################################
-    N8N_LOG_LEVEL: info
-  volumes:
-    - n8n_data:/home/node/.n8n
-  networks:
-    - app-network
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE}
+      N8N_LOG_LEVEL: info
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
 
 volumes:
   redis_data:
